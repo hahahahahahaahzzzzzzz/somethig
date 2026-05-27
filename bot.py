@@ -229,7 +229,7 @@ async def handle_cmds(client: Client, message: Message):
         "\U0001f4cc Auto-pin every card drop\n"
         "\U0001f4c2 Auto-filter result files by caption"
     )
-    await message.reply_text(cmds)
+    await message.reply_text(quote=True, cmds)
 
 
 @app.on_message(filters.document)
@@ -254,6 +254,8 @@ async def handle_document(client: Client, message: Message):
         return
 
     try:
+        processing_msg = await message.reply_text(quote=True, "⏳ **Scanning result file...**")
+
         # Download the file
         file_path = await message.download()
 
@@ -272,6 +274,7 @@ async def handle_document(client: Client, message: Message):
             os.remove(file_path)
 
         if content is None:
+            await processing_msg.edit_text("❌ Failed to read file content.")
             return
 
         # Parse the file
@@ -279,7 +282,10 @@ async def handle_document(client: Client, message: Message):
 
         # No hits? Do nothing
         if not parsed.charged and not parsed.insufficient:
+            await processing_msg.delete()
             return
+            
+        await processing_msg.delete()
 
         chat_id = message.chat.id
 
@@ -328,6 +334,10 @@ async def handle_document(client: Client, message: Message):
 
     except Exception as e:
         logger.error(f"Error processing file: {e}", exc_info=True)
+        try:
+            await processing_msg.edit_text("❌ Error processing file.")
+        except:
+            pass
 
 
 # ──────────────────────────────────────────────
@@ -435,6 +445,8 @@ async def handle_fl_command(client: Client, message: Message):
     # Parse the BIN filter argument (if any)
     parts = message.text.strip().split(maxsplit=1)
     bin_filter = parts[1].strip() if len(parts) > 1 else None
+    
+    processing_msg = await message.reply_text(quote=True, "⏳ **Extracting cards...**")
 
     # Get text content from the replied message
     content = ""
@@ -467,18 +479,18 @@ async def handle_fl_command(client: Client, message: Message):
     total_found = len(all_cards)
 
     if not all_cards:
-        await message.reply_text("\u274c No cards found in that message/file.")
+        await processing_msg.edit_text("❌ No cards found in that message/file.")
         return
 
     # Remove Luhn-invalid and expired cards
     all_cards, luhn_removed, expired_removed = clean_cards(all_cards)
 
     if not all_cards:
-        await message.reply_text(
-            f"\u274c All cards removed!\n"
-            f"\U0001f4b3 Found: {total_found}\n"
-            f"\u274c Luhn Invalid: {luhn_removed}\n"
-            f"\U0001f4c5 Expired: {expired_removed}"
+        await processing_msg.edit_text(
+            f"❌ All cards removed!\n"
+            f"💳 Found: {total_found}\n"
+            f"❌ Luhn Invalid: {luhn_removed}\n"
+            f"📅 Expired: {expired_removed}"
         )
         return
 
@@ -486,7 +498,7 @@ async def handle_fl_command(client: Client, message: Message):
     if bin_filter:
         filtered = [c for c in all_cards if c.startswith(bin_filter)]
         if not filtered:
-            await message.reply_text(f"\u274c No cards found with BIN `{bin_filter}`")
+            await processing_msg.edit_text(f"❌ No cards found with BIN `{bin_filter}`")
             return
 
         # Get BIN info for the caption
@@ -525,7 +537,8 @@ async def handle_fl_command(client: Client, message: Message):
     file_bytes.name = filename
 
     # Send the file
-    await message.reply_document(
+    await processing_msg.delete()
+    await message.reply_document(quote=True, 
         document=file_bytes,
         caption=caption,
     )
@@ -597,7 +610,7 @@ async def handle_bin_command(client: Client, message: Message):
         input_text = parts[1].strip()
 
     if not input_text:
-        await message.reply_text(
+        await message.reply_text(quote=True, 
             "\u2753 Usage:\n"
             "/bin 471227\n"
             "/bin 4712270074227232|10|27|031\n"
@@ -608,18 +621,19 @@ async def handle_bin_command(client: Client, message: Message):
     # Extract the BIN (first 6 digits) from whatever input we got
     digits_only = re.sub(r'[^\d]', '', input_text.split("|")[0] if "|" in input_text else input_text)
     if len(digits_only) < 6:
-        await message.reply_text("\u274c Need at least 6 digits for BIN lookup.")
+        await message.reply_text(quote=True, "\u274c Need at least 6 digits for BIN lookup.")
         return
 
     bin6 = digits_only[:6]
+    processing_msg = await message.reply_text(quote=True, "⏳ **Looking up BIN info...**")
     bin_info = lookup_bin(bin6)
 
     if not bin_info:
-        await message.reply_text(f"\u274c No BIN info found for `{bin6}`")
+        await processing_msg.edit_text(f"❌ No BIN info found for `{bin6}`")
         return
 
     text = format_bin_info(bin6, bin_info)
-    await message.reply_text(text)
+    await processing_msg.edit_text(text)
 
 
 # ──────────────────────────────────────────────
@@ -640,8 +654,10 @@ async def handle_export_command(client: Client, message: Message):
         charged_today = []
         charged_today_date = today
 
+    processing_msg = await message.reply_text(quote=True, "⏳ **Exporting today's charged cards...**")
+
     if not charged_today:
-        await message.reply_text("\U0001f4ad No charged cards collected today yet.")
+        await processing_msg.edit_text("💭 No charged cards collected today yet.")
         return
 
     # Remove duplicates
@@ -656,12 +672,13 @@ async def handle_export_command(client: Client, message: Message):
     file_bytes = io.BytesIO(file_content.encode("utf-8"))
     file_bytes.name = f"charged_{today}.txt"
 
-    await message.reply_document(
+    await processing_msg.delete()
+    await message.reply_document(quote=True, 
         document=file_bytes,
         caption=(
-            f"\u2705 Today's Charged Cards\n"
-            f"\U0001f4c5 Date: {today}\n"
-            f"\U0001f4b3 Total: {len(unique)}"
+            f"✅ Today's Charged Cards\n"
+            f"📅 Date: {today}\n"
+            f"💳 Total: {len(unique)}"
         ),
     )
 
@@ -710,18 +727,20 @@ async def handle_country_command(client: Client, message: Message):
 
     parts = message.text.strip().split(maxsplit=1)
     if len(parts) < 2:
-        await message.reply_text("\u2753 Usage: Reply to a file with /country US or /country INDIA")
+        await message.reply_text(quote=True, "\u2753 Usage: Reply to a file with /country US or /country INDIA")
         return
 
     country_filter = parts[1].strip().upper()
+    processing_msg = await message.reply_text(quote=True, "⏳ **Filtering by country...**")
 
     content = await get_replied_content(message)
     if not content:
+        await processing_msg.delete()
         return
 
     all_cards = extract_cards_from_text(content)
     if not all_cards:
-        await message.reply_text("\u274c No cards found.")
+        await processing_msg.edit_text("❌ No cards found.")
         return
 
     # Clean cards first
@@ -737,7 +756,7 @@ async def handle_country_command(client: Client, message: Message):
             matched.append(card)
 
     if not matched:
-        await message.reply_text(f"\u274c No cards found from {country_filter}")
+        await processing_msg.edit_text(f"❌ No cards found from {country_filter}")
         return
 
     # Get country flag
@@ -748,7 +767,8 @@ async def handle_country_command(client: Client, message: Message):
     file_bytes = io.BytesIO(file_content.encode("utf-8"))
     file_bytes.name = f"cards_{country_filter}.txt"
 
-    await message.reply_document(
+    await processing_msg.delete()
+    await message.reply_document(quote=True, 
         document=file_bytes,
         caption=(
             f"\U0001d402\U0001d428\U0001d42e\U0001d427\U0001d42d\U0001d42b\U0001d432: {country_filter} {flag}\n"
@@ -769,18 +789,20 @@ async def handle_bank_command(client: Client, message: Message):
 
     parts = message.text.strip().split(maxsplit=1)
     if len(parts) < 2:
-        await message.reply_text("\u2753 Usage: Reply to a file with /bank CIMB or /bank Chase")
+        await message.reply_text(quote=True, "\u2753 Usage: Reply to a file with /bank CIMB or /bank Chase")
         return
 
     bank_filter = parts[1].strip().upper()
+    processing_msg = await message.reply_text(quote=True, "⏳ **Filtering by bank...**")
 
     content = await get_replied_content(message)
     if not content:
+        await processing_msg.delete()
         return
 
     all_cards = extract_cards_from_text(content)
     if not all_cards:
-        await message.reply_text("\u274c No cards found.")
+        await processing_msg.edit_text("❌ No cards found.")
         return
 
     # Clean cards first
@@ -796,7 +818,7 @@ async def handle_bank_command(client: Client, message: Message):
             matched.append(card)
 
     if not matched:
-        await message.reply_text(f"\u274c No cards found from bank: {bank_filter}")
+        await processing_msg.edit_text(f"❌ No cards found from bank: {bank_filter}")
         return
 
     # Get sample bank info for caption
@@ -809,7 +831,8 @@ async def handle_bank_command(client: Client, message: Message):
     file_bytes = io.BytesIO(file_content.encode("utf-8"))
     file_bytes.name = f"cards_{bank_filter}.txt"
 
-    await message.reply_document(
+    await processing_msg.delete()
+    await message.reply_document(quote=True, 
         document=file_bytes,
         caption=(
             f"\U0001d408\U0001d42c\U0001d42c\U0001d42e\U0001d41e\U0001d42b: {bank_name}\n"
@@ -1013,3 +1036,4 @@ if __name__ == "__main__":
         print("  Press Ctrl+C to stop.")
         print("=" * 50)
         app.run()
+    
