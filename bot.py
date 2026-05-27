@@ -229,7 +229,7 @@ async def handle_cmds(client: Client, message: Message):
         "\U0001f4cc Auto-pin every card drop\n"
         "\U0001f4c2 Auto-filter result files by caption"
     )
-    await message.reply_text(quote=True, cmds)
+    await message.reply_text(cmds, quote=True)
 
 
 @app.on_message(filters.document)
@@ -254,7 +254,7 @@ async def handle_document(client: Client, message: Message):
         return
 
     try:
-        processing_msg = await message.reply_text(quote=True, "⏳ **Scanning result file...**")
+        processing_msg = await message.reply_text("⏳ **Scanning result file...**", quote=True)
 
         # Download the file
         file_path = await message.download()
@@ -446,7 +446,7 @@ async def handle_fl_command(client: Client, message: Message):
     parts = message.text.strip().split(maxsplit=1)
     bin_filter = parts[1].strip() if len(parts) > 1 else None
     
-    processing_msg = await message.reply_text(quote=True, "⏳ **Extracting cards...**")
+    processing_msg = await message.reply_text("⏳ **Extracting cards...**", quote=True)
 
     # Get text content from the replied message
     content = ""
@@ -610,22 +610,21 @@ async def handle_bin_command(client: Client, message: Message):
         input_text = parts[1].strip()
 
     if not input_text:
-        await message.reply_text(quote=True, 
-            "\u2753 Usage:\n"
+        await message.reply_text("\u2753 Usage:\n"
             "/bin 471227\n"
             "/bin 4712270074227232|10|27|031\n"
             "Or reply to a message with /bin"
-        )
+        , quote=True)
         return
 
     # Extract the BIN (first 6 digits) from whatever input we got
     digits_only = re.sub(r'[^\d]', '', input_text.split("|")[0] if "|" in input_text else input_text)
     if len(digits_only) < 6:
-        await message.reply_text(quote=True, "\u274c Need at least 6 digits for BIN lookup.")
+        await message.reply_text("\u274c Need at least 6 digits for BIN lookup.", quote=True)
         return
 
     bin6 = digits_only[:6]
-    processing_msg = await message.reply_text(quote=True, "⏳ **Looking up BIN info...**")
+    processing_msg = await message.reply_text("⏳ **Looking up BIN info...**", quote=True)
     bin_info = lookup_bin(bin6)
 
     if not bin_info:
@@ -654,7 +653,7 @@ async def handle_export_command(client: Client, message: Message):
         charged_today = []
         charged_today_date = today
 
-    processing_msg = await message.reply_text(quote=True, "⏳ **Exporting today's charged cards...**")
+    processing_msg = await message.reply_text("⏳ **Exporting today's charged cards...**", quote=True)
 
     if not charged_today:
         await processing_msg.edit_text("💭 No charged cards collected today yet.")
@@ -727,11 +726,11 @@ async def handle_country_command(client: Client, message: Message):
 
     parts = message.text.strip().split(maxsplit=1)
     if len(parts) < 2:
-        await message.reply_text(quote=True, "\u2753 Usage: Reply to a file with /country US or /country INDIA")
+        await message.reply_text("\u2753 Usage: Reply to a file with /country US or /country INDIA", quote=True)
         return
 
     country_filter = parts[1].strip().upper()
-    processing_msg = await message.reply_text(quote=True, "⏳ **Filtering by country...**")
+    processing_msg = await message.reply_text("⏳ **Filtering by country...**", quote=True)
 
     content = await get_replied_content(message)
     if not content:
@@ -789,11 +788,11 @@ async def handle_bank_command(client: Client, message: Message):
 
     parts = message.text.strip().split(maxsplit=1)
     if len(parts) < 2:
-        await message.reply_text(quote=True, "\u2753 Usage: Reply to a file with /bank CIMB or /bank Chase")
+        await message.reply_text("\u2753 Usage: Reply to a file with /bank CIMB or /bank Chase", quote=True)
         return
 
     bank_filter = parts[1].strip().upper()
-    processing_msg = await message.reply_text(quote=True, "⏳ **Filtering by bank...**")
+    processing_msg = await message.reply_text("⏳ **Filtering by bank...**", quote=True)
 
     content = await get_replied_content(message)
     if not content:
