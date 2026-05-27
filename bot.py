@@ -26,10 +26,11 @@ from parser import parse_result_file, CardEntry
 # ──────────────────────────────────────────────
 # Config
 # ──────────────────────────────────────────────
+# ──────────────────────────────────────────────
 
 load_dotenv()
-API_ID = os.getenv("API_ID")
-API_HASH = os.getenv("API_HASH")
+API_ID = os.getenv("API_ID", "").strip('"\'')
+API_HASH = os.getenv("API_HASH", "").strip('"\'')
 
 logging.basicConfig(
     format="%(asctime)s - %(name)s - %(levelname)s - %(message)s",
@@ -41,18 +42,19 @@ logger = logging.getLogger(__name__)
 bin_cache: dict[str, dict] = {}
 
 # Load caption filters from .env (split by ||)
-_raw_filter = os.getenv("CAPTION_FILTER", "")
+_raw_filter = os.getenv("CAPTION_FILTER", "").strip('"\'')
 CAPTION_FILTERS = [c.strip().lower() for c in _raw_filter.split("||") if c.strip()]
 
 # Gateways where ALL messages should be deleted (even charged)
-_raw_delete_gw = os.getenv("DELETE_GATEWAYS", "")
+_raw_delete_gw = os.getenv("DELETE_GATEWAYS", "").strip('"\'')
 DELETE_GATEWAYS = [g.strip().lower() for g in _raw_delete_gw.split("||") if g.strip()]
 
 # Only work in this group
-ALLOWED_CHAT = int(os.getenv("ALLOWED_CHAT", "-1003727002856"))
+_raw_chat = os.getenv("ALLOWED_CHAT", "-1003727002856").strip('"\'')
+ALLOWED_CHAT = int(_raw_chat) if _raw_chat else -1003727002856
 
 # Session string for cloud deployment (Render, etc.)
-SESSION_STRING = os.getenv("SESSION_STRING", "")
+SESSION_STRING = os.getenv("SESSION_STRING", "").strip('"\'')
 
 # Create Pyrogram userbot client
 if SESSION_STRING:
