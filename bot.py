@@ -21,7 +21,7 @@ from pyrogram import Client, filters
 from pyrogram.types import Message
 from pyrogram.errors import ChatAdminRequired, MessageIdInvalid
 
-from parser import parse_result_file, CardEntry
+from card_parser import parse_result_file, CardEntry
 
 # ──────────────────────────────────────────────
 # Config
