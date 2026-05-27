@@ -831,6 +831,7 @@ def is_checker_message(text: str) -> bool:
         "\U0001f4b3 card:" in text_lower
         or "\U0001d5d6\U0001d5ee\U0001d5ff\U0001d5f1:" in text_lower
         or '"card"' in text_lower
+        or "card:" in text_lower
     )
     has_response = (
         "\U0001f4e9 response:" in text_lower
@@ -882,16 +883,16 @@ def extract_card_from_message(text: str) -> CardEntry | None:
         except (json.JSONDecodeError, ValueError):
             pass
 
-    # Fallback: extract from formatted lines
+    # Fallback: extract from formatted lines (case-insensitive)
     if not card_number:
-        # Match 💳 Card: XXXX|XX|XX|XXX or 𝗖𝗮𝗿𝗱: XXXX|...
-        card_match = re.search(r'(?:\U0001f4b3\s*Card:|Card:)\s*(\d[\d|]+)', text)
+        # Match 💳 Card: XXXX|XX|XX|XXX or 𝗖𝗮𝗿𝗱: XXXX|... or Card: XXXX|...
+        card_match = re.search(r'(?:\U0001f4b3\s*Card:|\U0001d5d6\U0001d5ee\U0001d5ff\U0001d5f1:|Card:)\s*(\d[\d|]+)', text, re.IGNORECASE)
         if card_match:
             card_number = card_match.group(1).strip()
 
     if not response:
         # Match 📩 Response: ... or Response: ...
-        resp_match = re.search(r'(?:\U0001f4e9\s*Response:|Response:)\s*(.+?)(?:\n|$)', text)
+        resp_match = re.search(r'(?:\U0001f4e9\s*Response:|Response:)\s*(.+?)(?:\n|$)', text, re.IGNORECASE)
         if resp_match:
             response = resp_match.group(1).strip()
 
