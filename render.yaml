@@ -2,7 +2,7 @@ services:
   - type: worker
     name: raven-filter-bot
     runtime: python
-    plan: pro ultra
+    plan: pro_ultra
     buildCommand: pip install -r requirements.txt
     startCommand: python bot.py
     envVars:
